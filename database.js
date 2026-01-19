@@ -15,7 +15,6 @@ async function connectDB() {
   }
 }
 
-// User schema and model
 const userSchema = new mongoose.Schema({
   Username: String,
   password: String,
@@ -23,15 +22,12 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-// Validate login credentials against database
 async function validateLogin(username, password) {
   try {
-    console.log(`Querying for Username: ${username}, password: ${password}`);
     const user = await User.findOne({
       Username: username,
       password: password
     });
-    console.log('Query result:', user);
     return user;
   } catch (error) {
     console.error('Database query error:', error);

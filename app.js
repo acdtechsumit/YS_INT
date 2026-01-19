@@ -3,7 +3,6 @@ const fs = require('fs');
 const querystring = require('querystring');
 const { connectDB, validateLogin } = require('./database');
 
-// Connect to database at startup
 connectDB();
 
 http.createServer((req, resp) => {
@@ -12,7 +11,7 @@ http.createServer((req, resp) => {
       fs.readFile('login.html', (err, login) => {
          if (err) {
             resp.writeHead(404, { 'Content-Type': 'text/html' });
-            return resp.end('404 Not Found');
+            return resp.end('Login page not found');
          }
          resp.end(login);
       });
@@ -34,7 +33,6 @@ http.createServer((req, resp) => {
 
          try {
             const user = await validateLogin(readabledata.Username, readabledata.password);
-            console.log('User found:', user);
 
             if (user) {
                console.log('Authentication successful, loading dashboard');
