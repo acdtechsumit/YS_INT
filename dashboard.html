@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+    <p>welcome : {{username}} | Logged in for: <span id="elapsed">0m 0s</span></p>
+    
+    <script>
+        let inactivityTimer;
+        let loginTime = Date.now();
+        const TIMEOUT = 1 * 60 * 1000; 
+
+        function updateElapsedTime() {
+            let elapsed = Math.floor((Date.now() - loginTime) / 1000);
+            let minutes = Math.floor(elapsed / 60);
+            let seconds = elapsed % 60;
+            document.getElementById('elapsed').textContent = minutes + 'm ' + seconds + 's';
+        }
+
+        function resetTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                alert('Session expired due to inactivity!');
+                window.location.href = '/';
+            }, TIMEOUT);
+        }
+
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('keypress', resetTimer);
+        document.addEventListener('click', resetTimer);
+
+        resetTimer();
+        setInterval(updateElapsedTime, 1000);
+    </script>
+</body>
+</html>
