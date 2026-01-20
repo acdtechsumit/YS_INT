@@ -18,7 +18,7 @@ http.createServer((req, resp) => {
    }
 
 
-   else if (req.url === '/login' && req.method === 'POST') {
+   else if (req.url === '/dashboard' && req.method === 'POST') {
       let logindata = [];
 
       req.on('data', chunk => {
@@ -51,13 +51,14 @@ http.createServer((req, resp) => {
             }
             else {
                console.log('Authentication failed, loading relogin');
-               fs.readFile('relogin.html', (err, relogin) => {
+               fs.readFile('login.html', (err, login) => {
                   if (err) {
                      resp.writeHead(404, { 'Content-Type': 'text/html' });
                      return resp.end('404 Not Found');
                   }
                   resp.writeHead(200, { 'Content-Type': 'text/html' });
-                  resp.end(relogin);
+                  resp.write('<script>alert("Invalid credentials, please try again.");window.location.href = "/";</script>');
+                  resp.end(login);
                });
             }
          } catch (error) {
@@ -67,17 +68,6 @@ http.createServer((req, resp) => {
          }
       });
    }
-   else if (req.url === '/dashboard') {
-      fs.readFile('dashboard.html', (err, dashboard) => {
-         if (err) {
-            resp.writeHead(404, { 'Content-Type': 'text/html' });
-            return resp.end('404 Not Found');
-         }
-         resp.writeHead(200, { 'Content-Type': 'text/html' });
-         resp.end(dashboard);
-      });
-   }
-
 
    else {
       resp.writeHead(404, { 'Content-Type': 'text/html' });

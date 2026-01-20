@@ -1,17 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: #333;
+            padding: 30px 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        p {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            font-size: 18px;
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        span {
+            font-weight: 600;
+            color: #2a5298;
+        }
+    </style>
 </head>
+
 <body>
-    <p>welcome : {{username}} | Logged in for: <span id="elapsed">0m 0s</span></p>
-    
+    <p>welcome : {{username}} |  <span id="elapsed">0m 0s</span> ago</p>
+
     <script>
         let inactivityTimer;
         let loginTime = Date.now();
-        const TIMEOUT = 1 * 60 * 1000; 
+        const TIMEOUT = 1 * 60 * 1000;
 
         function updateElapsedTime() {
             let elapsed = Math.floor((Date.now() - loginTime) / 1000);
@@ -36,4 +72,5 @@
         setInterval(updateElapsedTime, 1000);
     </script>
 </body>
+
 </html>
