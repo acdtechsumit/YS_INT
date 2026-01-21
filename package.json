@@ -11,9 +11,10 @@
   "author": "Sumit Kushwaha",
   "license": "ISC",
   "dependencies": {
-    "mongoose": "^7.0.0"
+    "chalk": "^4.1.2",
+    "mongoose": "^7.0.0",
+    "nodemon": "^3.1.11"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/acdtechsumit/YS_INT.git"

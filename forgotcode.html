@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        form {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 50px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .form-subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            background-color: #f8f9fa;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(to right, #6c757d, #5a6268);
+            font-size: 14px;
+            padding: 12px;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(to right, #5a6268, #4e555b);
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .back-link a {
+            color: #1e3c72;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+            color: #2a5298;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: -12px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        input.error {
+            border-color: #dc3545 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <form method="post" action="/resetpassword" id="forgotPasswordForm">
+        <h2>Verify OTP</h2>
+        <p class="form-subtitle">Enter OTP from Console</p>
+        <input type="text" id="otpinput" placeholder="6 Digit code" name="otp" required>
+        <button type="submit">Verify</button>
+        <button type="button" class="btn-secondary" onclick="window.location.href='/forgotpassword'">Back to Forgot Page</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('forgotPasswordForm');
+        const otpInput = document.getElementById('otpinput');
+
+        form.addEventListener('submit', function (e) {
+            const otpValue = otpInput.value.trim();
+            const otpPattern = /^\d{6}$/;
+
+            if (!otpPattern.test(otpValue)) {
+                e.preventDefault();
+                alert('Please enter a valid 6-digit OTP code.');
+                otpInput.classList.add('error');
+            } else {
+                otpInput.classList.remove('error');
+            }
+        });
+    </script>
+</body>
+
+</html>

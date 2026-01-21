@@ -1,7 +1,8 @@
 const http = require('http');
 const fs = require('fs');
 const querystring = require('querystring');
-const { connectDB, validateLogin } = require('./database');
+const chalk = require('chalk');
+const { connectDB, validateLogin, createSignup, Checkmail, createOTP, verifyOTP, updatePassword } = require('./database');
 
 connectDB();
 
@@ -27,30 +28,27 @@ http.createServer((req, resp) => {
 
       req.on('end', async () => {
          let loginrawdata = Buffer.concat(logindata).toString();
-         let readabledata = querystring.parse(loginrawdata);
-
-         console.log(readabledata);
+         let loginreadabledata = querystring.parse(loginrawdata);
 
          try {
-            const user = await validateLogin(readabledata.Username, readabledata.password);
+            const user = await validateLogin(loginreadabledata.Username, loginreadabledata.password);
 
             if (user) {
-               console.log('Authentication successful, loading dashboard');
+               console.log('Login successful for user:', loginreadabledata.Username, 'with password:', loginreadabledata.password);
                fs.readFile('dashboard.html', (err, dashboard) => {
                   if (err) {
                      resp.writeHead(404, { 'Content-Type': 'text/html' });
                      return resp.end('404 Not Found');
                   }
-                  
+
                   let dashboardContent = dashboard.toString();
-                  dashboardContent = dashboardContent.replace('{{username}}', user.Username);
-                 
+                  dashboardContent = dashboardContent.replace('{{username}}' , loginreadabledata.Username);
+
                   resp.writeHead(200, { 'Content-Type': 'text/html' });
                   resp.end(dashboardContent);
                });
             }
             else {
-               console.log('Authentication failed, loading relogin');
                fs.readFile('login.html', (err, login) => {
                   if (err) {
                      resp.writeHead(404, { 'Content-Type': 'text/html' });
@@ -68,7 +66,198 @@ http.createServer((req, resp) => {
          }
       });
    }
+   else if (req.url === '/forgotpassword') {
+      fs.readFile('forgotpassword.html', (err, forgotpassword) => {
+         if (err) {
+            resp.writeHead(404, { 'Content-Type': 'text/html' });
+            return resp.end('Forgot Password page not found');
+         }
+         resp.writeHead(200, { 'Content-Type': 'text/html' });
+         resp.end(forgotpassword);
+      });
 
+   }
+
+   else if (req.url === '/signup' && req.method === 'GET') {
+      fs.readFile('signup.html', (err, signup) => {
+         if (err) {
+            resp.writeHead(404, { 'Content-Type': 'text/html' });
+            return resp.end('Forgot Password page not found');
+         }
+         resp.writeHead(200, { 'Content-Type': 'text/html' });
+         resp.end(signup);
+      });
+
+   }
+
+   else if (req.url === '/signup' && req.method === 'POST') {
+      let signupdata = [];
+
+      req.on('data', chunk => {
+         signupdata.push(chunk);
+      });
+
+      req.on('end', async () => {
+         let signuprawdata = Buffer.concat(signupdata).toString();
+         let signupreadabledata = querystring.parse(signuprawdata);
+
+         try {
+            const result = await createSignup(signupreadabledata.email, signupreadabledata.confirmPassword);
+
+            if (result) {
+               console.log('Account created successfully for email:', signupreadabledata.email, 'with password:', signupreadabledata.confirmPassword);
+               resp.writeHead(200, { 'Content-Type': 'text/html' });
+               resp.end('<script>alert("Account Created Successfully");window.location.href = "/";</script>');
+            }
+            else {
+               resp.writeHead(500, { 'Content-Type': 'text/html' });
+               resp.end('<script>alert("Account already exists");window.location.href = "/";</script>');
+            }  
+         } catch (error) {
+            console.error('Signup error:', error);
+            resp.writeHead(500, { 'Content-Type': 'text/html' });
+            resp.end('<script>alert("Error creating account");window.location.href = "/";</script>');
+         }
+      });
+   }
+
+   else if (req.url === '/forgotpassword' && req.method === 'GET ') {
+      fs.readFile('forgotpassword.html', (err, forgotpassword) => {
+         if (err) {
+            resp.writeHead(404, { 'Content-Type': 'text/html' });
+            return resp.end('Forgot Password page not found');
+         }
+         resp.writeHead(200, { 'Content-Type': 'text/html' });
+         resp.end(forgotpassword);
+      });
+   }
+
+   else if (req.url === '/forgotcode' && req.method === 'GET') {
+      fs.readFile('forgotcode.html', (err, forgotcode) => {
+         if (err) {
+            resp.writeHead(404, { 'Content-Type': 'text/html' });
+            return resp.end('Forgot Code page not found');
+         }
+         resp.writeHead(200, { 'Content-Type': 'text/html' });
+         resp.end(forgotcode);
+      });
+   }
+
+   else if (req.url === '/forgotcode' && req.method === 'POST') {
+      let forgotdata = [];
+      req.on('data', chunk => {
+         forgotdata.push(chunk);
+      });
+
+      req.on('end', async () => {
+         let forgotrawdata = Buffer.concat(forgotdata).toString();
+         let forgotreadabledata = querystring.parse(forgotrawdata);
+
+         global.forgottenEmail = forgotreadabledata.email;
+
+         try {
+            const email = await Checkmail(forgotreadabledata.email);
+            if (email) {
+               createOTP(forgotreadabledata.email);
+               fs.readFile('forgotcode.html', (err, forgotcode) => {
+                  if (err) {
+                     resp.writeHead(404, { 'Content-Type': 'text/html' });
+                     return resp.end('404 Not Found');
+                  }
+                  resp.writeHead(200, { 'Content-Type': 'text/html' });
+                  resp.end(forgotcode);
+               });
+            }
+            else {
+               fs.readFile('forgotpassword.html', (err, forgotpassword) => {
+                  if (err) {
+                     resp.writeHead(404, { 'Content-Type': 'text/html' });
+                     return resp.end('404 Not Found');
+                  }
+                  resp.writeHead(200, { 'Content-Type': 'text/html' });
+                  resp.write('<script>alert("Email not found, please try again.");window.location.href = "/forgotpassword";</script>');
+                  resp.end(forgotpassword);
+               });
+            }
+         } catch (error) {
+            console.error('Forgot Password error:', error);
+            resp.writeHead(500, { 'Content-Type': 'text/html' });
+            resp.end('Server error');
+         }
+      });
+   }
+
+   else if (req.url === '/resetpassword' && req.method === 'POST') {
+      let otpdata = [];
+      req.on('data', chunk => {
+         otpdata.push(chunk);
+      });
+
+      req.on('end', async () => {
+         let otprawdata = Buffer.concat(otpdata).toString();
+         let otpreadabledata = querystring.parse(otprawdata);
+
+         try {
+            const otpRecord = await verifyOTP(forgottenEmail, otpreadabledata.otp);
+            if (otpRecord) {
+               fs.readFile('resetpassword.html', (err, resetpassword) => {
+                  if (err) {
+                     resp.writeHead(404, { 'Content-Type': 'text/html' });
+                     return resp.end('404 Not Found');
+                  }
+                  resp.writeHead(200, { 'Content-Type': 'text/html' });
+                  resp.end(resetpassword);
+               });
+            } else {
+               console.log(chalk.red('Entered OTP:', otpreadabledata.otp, 'for Email:', forgottenEmail , 'is invalid'));
+               fs.readFile('forgotcode.html', (err, forgotcode) => {
+                  if (err) {
+                     resp.writeHead(404, { 'Content-Type': 'text/html' });
+                     return resp.end('404 Not Found');
+                  }
+                  resp.writeHead(200, { 'Content-Type': 'text/html' });
+                  resp.write('<script>alert("Invalid OTP");window.location.href = "/forgotcode";</script>');
+                  resp.end(forgotcode);
+               });
+            }
+         } catch (error) {
+            console.error('Verify OTP error:', error);
+            resp.writeHead(500, { 'Content-Type': 'text/html' });
+            resp.end('Server error');
+         }
+      });
+   }
+
+   else if (req.url === '/updatepassword' && req.method === 'POST') {
+      let resetdata = [];
+      req.on('data', chunk => {
+         resetdata.push(chunk);
+      });
+      req.on('end', async () => {
+         let resetrawdata = Buffer.concat(resetdata).toString();
+         let resetreadabledata = querystring.parse(resetrawdata);
+         console.log('New Password:', resetreadabledata.password, 'for Email:', forgottenEmail);
+         try {
+            const result = await updatePassword(forgottenEmail, resetreadabledata.password);
+            if (result.modifiedCount > 0) {
+               resp.writeHead(200, { 'Content-Type': 'text/html' });
+               resp.end('<script>alert("Password updated successfully");window.location.href = "/";</script>');
+            }
+            else if (result.matchedCount > 0) {
+               resp.writeHead(200, { 'Content-Type': 'text/html' });
+               resp.end('<script>alert("New password is the same as the old password");window.location.href = "/resetpassword";</script>');
+            }
+            else {
+               resp.writeHead(500, { 'Content-Type': 'text/html' });
+               resp.end('<script>alert("Error updating password");</script>');
+            }
+         } catch (error) {
+            console.error('Update Password error:', error);
+            resp.writeHead(500, { 'Content-Type': 'text/html' });
+            resp.end('Server error');
+         }
+      });
+   }
    else {
       resp.writeHead(404, { 'Content-Type': 'text/html' });
       resp.end('404 Not Found');
