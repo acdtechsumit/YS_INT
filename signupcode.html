@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify OTP</title>
+    <title>Sign up OTP</title>
     <style>
         * {
             margin: 0;
@@ -129,16 +129,18 @@
 </head>
 
 <body>
-    <form method="post" action="/resetpassword" id="forgotPasswordForm">
-        <h2>Verify OTP</h2>
+    <form method="post" action="/signupuser" id="signupOTPForm">
+        <h2>SIGN UP OTP</h2>
         <p class="form-subtitle">OTP sent to your email<br>check your inbox</p>
         <input type="text" id="otpinput" placeholder="6 Digit code" name="otp" required>
-        <button type="submit">Verify</button>
-        <button type="button" class="btn-secondary" onclick="window.location.href='/forgotpassword'">Back to Forgot Page</button>
+        <input type="hidden" name="email" value="{{email}}">
+        <input type="hidden" name="password" value="{{password}}">
+        <button type="submit">Verify for Sign Up</button>
+        <!-- <button type="button" class="btn-secondary" onclick="window.location.href='/forgotpassword'">Back to Forgot Page</button> -->
     </form>
 
     <script>
-        const form = document.getElementById('forgotPasswordForm');
+        const form = document.getElementById('signupOTPForm');
         const otpInput = document.getElementById('otpinput');
 
         form.addEventListener('submit', function (e) {

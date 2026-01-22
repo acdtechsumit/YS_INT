@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const chalk = require('chalk');
+const { sendforgotcodeMail, sendsignupcodeMail } = require('./mailer');
 
 const MONGODB_URI = 'mongodb+srv://acdtechsumit_db_user:Sumit%40MDB@cluster0.pyrgkg7.mongodb.net/YS_INTDB';
 
@@ -21,15 +22,23 @@ const UsersSchema = new mongoose.Schema({
   password: String,
 }, { collection: 'Users' });
 
-const OTPSchema = new mongoose.Schema({
+const User = mongoose.model('User', UsersSchema);
+
+const forgototpschema = new mongoose.Schema({
   email: String,
   otp: String,
   createdAt: { type: Date, default: Date.now, index: { expires: 300 } }
-}, { collection: 'OTPs' });
+}, { collection: 'forgotOTPs' });
 
-const OTPModel = mongoose.model('OTP', OTPSchema);
+const forgotOTPModel = mongoose.model('forgotOTP', forgototpschema);
 
-const User = mongoose.model('User', UsersSchema);
+const signupotpschema = new mongoose.Schema({
+  email: String,
+  otp: String,
+  createdAt: { type: Date, default: Date.now, index: { expires: 300 } }
+}, { collection: 'signupOTPs' });
+
+const signupOTPModel = mongoose.model('signupOTP', signupotpschema);
 
 async function validateLogin(username, password) {
   try {
@@ -44,13 +53,25 @@ async function validateLogin(username, password) {
   }
 }
 
+async function createsignOTP(email) {
+  try {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    function savesignOTP(email, otp) {
+
+      const otpEntry = new signupOTPModel({ email: email, otp: otp, createdAt: new Date() });
+      return otpEntry.save();
+    }
+    savesignOTP(email, otp);
+    sendsignupcodeMail(email, otp);
+    console.log(chalk.green('generated SignUp OTP:', otp, 'for Email:', email));
+  } catch (error) {
+    console.error('Create OTP error:', error);
+    throw error;
+  }
+}
+
 async function createSignup(email, password) {
   try {
-    const existingUser = await User.findOne({ email: email });
-    if (existingUser) {
-      throw new Error('Email already exists');
-    }
-
     const newUser = new User({
       email: email,
       password: password
@@ -58,7 +79,7 @@ async function createSignup(email, password) {
     const result = await newUser.save();
     return result;
   } catch (error) {
-    console.error('Signup database error:', error);
+    console.error('Create Signup error:', error);
     throw error;
   }
 }
@@ -73,17 +94,27 @@ async function Checkmail(email) {
   }
 }
 
-function createOTP(email) {
+async function verifysignOTP(email, otp) {
+  try {
+    return signupOTPModel.findOne({ email: email, otp: otp });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    throw error;
+  }
+}
+
+function createforgotOTP(email) {
   try {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    function saveOTP(email, otp) {
+    function saveforgotOTP(email, otp) {
 
-      const otpEntry = new OTPModel({ email: email, otp: otp, createdAt: new Date() });
+      const otpEntry = new forgotOTPModel({ email: email, otp: otp, createdAt: new Date() });
       return otpEntry.save();
     }
-    saveOTP(email, otp);
-    console.log(chalk.green('generated OTP:', otp, 'for Email:', email));
+    saveforgotOTP(email, otp);
+    sendforgotcodeMail(email, otp);
+    console.log(chalk.green('generated Forgot OTP:', otp, 'for Email:', email));
   } catch (error) {
     console.error('Create OTP error:', error);
     throw error;
@@ -91,9 +122,9 @@ function createOTP(email) {
 }
 
 
-async function verifyOTP(email, otp) {
+async function verifyforgotOTP(email, otp) {
   try {
-    return OTPModel.findOne({ email: email, otp: otp });
+    return forgotOTPModel.findOne({ email: email, otp: otp });
   } catch (error) {
     console.error('Verify OTP error:', error);
     throw error;
@@ -113,4 +144,4 @@ async function updatePassword(email, newPassword) {
   }
 }
 
-module.exports = { connectDB, validateLogin, createSignup, Checkmail, verifyOTP, createOTP, updatePassword };
+module.exports = { connectDB, validateLogin, createSignup, Checkmail, verifyforgotOTP, verifysignOTP, createsignOTP, createforgotOTP, updatePassword };

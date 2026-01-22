@@ -2,11 +2,11 @@ const http = require('http');
 const fs = require('fs');
 const querystring = require('querystring');
 const chalk = require('chalk');
-const { connectDB, validateLogin, createSignup, Checkmail, createOTP, verifyOTP, updatePassword } = require('./database');
+const { connectDB, validateLogin, createSignup, Checkmail, createforgotOTP, createsignOTP, verifysignOTP, verifyforgotOTP, updatePassword } = require('./database');
 
 connectDB();
 
-http.createServer((req, resp) => {
+http.createServer(async (req, resp) => {
 
    if (req.url === '/') {
       fs.readFile('login.html', (err, login) => {
@@ -42,7 +42,7 @@ http.createServer((req, resp) => {
                   }
 
                   let dashboardContent = dashboard.toString();
-                  dashboardContent = dashboardContent.replace('{{username}}' , loginreadabledata.Username);
+                  dashboardContent = dashboardContent.replace('{{username}}', loginreadabledata.Username);
 
                   resp.writeHead(200, { 'Content-Type': 'text/html' });
                   resp.end(dashboardContent);
@@ -90,7 +90,7 @@ http.createServer((req, resp) => {
 
    }
 
-   else if (req.url === '/signup' && req.method === 'POST') {
+   else if (req.url === '/signupcode' && req.method === 'POST') {
       let signupdata = [];
 
       req.on('data', chunk => {
@@ -100,26 +100,92 @@ http.createServer((req, resp) => {
       req.on('end', async () => {
          let signuprawdata = Buffer.concat(signupdata).toString();
          let signupreadabledata = querystring.parse(signuprawdata);
-
          try {
-            const result = await createSignup(signupreadabledata.email, signupreadabledata.confirmPassword);
-
-            if (result) {
-               console.log('Account created successfully for email:', signupreadabledata.email, 'with password:', signupreadabledata.confirmPassword);
-               resp.writeHead(200, { 'Content-Type': 'text/html' });
-               resp.end('<script>alert("Account Created Successfully");window.location.href = "/";</script>');
+            const email = await Checkmail(signupreadabledata.email);
+            if (email) {
+               fs.readFile('login.html', (err, login) => {
+                  if (err) {
+                     resp.writeHead(404, { 'Content-Type': 'text/html' });
+                     return resp.end('404 Not Found');
+                  }
+                  resp.writeHead(200, { 'Content-Type': 'text/html' });
+                  resp.write('<script>alert ("email already exist");</script>')
+                  resp.end(login);
+               });
             }
             else {
-               resp.writeHead(500, { 'Content-Type': 'text/html' });
-               resp.end('<script>alert("Account already exists");window.location.href = "/";</script>');
-            }  
+               fs.readFile('signupcode.html', (err, signupcode) => {
+                  if (err) {
+                     resp.writeHead(404, { 'Content-Type': 'text/html' });
+                     return resp.end('404 Not Found');
+                  }
+                  resp.writeHead(200, { 'Content-Type': 'text/html' });
+                  createsignOTP(signupreadabledata.email);
+                  let signupcodeContent = signupcode.toString();
+                  signupcodeContent = signupcodeContent.replace('{{email}}', signupreadabledata.email);
+                  signupcodeContent = signupcodeContent.replace('{{password}}', signupreadabledata.confirmPassword);
+                  console.log("this is from cnf psw", signupreadabledata.confirmPassword);
+                  resp.end(signupcodeContent);
+
+               });
+            }
          } catch (error) {
-            console.error('Signup error:', error);
+            console.error('signup error:', error);
             resp.writeHead(500, { 'Content-Type': 'text/html' });
-            resp.end('<script>alert("Error creating account");window.location.href = "/";</script>');
+            resp.end('Server error');
          }
       });
    }
+
+
+   else if (req.url === '/signupuser' && req.method === 'POST') {
+      let signotpdata = [];
+      req.on('data', chunk => {
+         signotpdata.push(chunk);
+      });
+
+      req.on('end', async () => {
+         let signotprawdata = Buffer.concat(signotpdata).toString();
+         let signotpreadabledata = querystring.parse(signotprawdata);
+
+         try {
+            const otprecord = await verifysignOTP(signotpreadabledata.email, signotpreadabledata.otp)
+            if (otprecord) {
+               const result = await createSignup(signotpreadabledata.email, signotpreadabledata.password);
+               if (result) {
+                  console.log('Account created successfully for email:', signotpreadabledata.email, 'with password:', signotpreadabledata.password);
+                  resp.writeHead(200, { 'Content-Type': 'text/html' });
+                  resp.end('<script>alert("Account Created Successfully");window.location.href = "/";</script>');
+               }
+               else {
+                  resp.writeHead(500, { 'Content-Type': 'text/html' });
+                  resp.end('<script>alert("some error occured");window.location.href = "/";</script>');
+               }
+            }
+            else {
+               fs.readFile('signupcode.html', (err, signupcode) => {
+                  if (err) {
+                     resp.writeHead(404, { 'Content-Type': 'text/html' });
+                     return resp.end('404 Not Found');
+                  }
+                  resp.writeHead(200, { 'Content-Type': 'text/html' });
+                  resp.write('<script>alert("invalid OTP");</script>')
+                  let signupcodeContent = signupcode.toString();
+                  signupcodeContent = signupcodeContent.replace('{{email}}', signotpreadabledata.email);
+                  signupcodeContent = signupcodeContent.replace('{{password}}', signotpreadabledata.password);
+                  resp.end(signupcodeContent);
+               });
+            }
+         }
+         catch (error) {
+            console.error('signup error:', error);
+            resp.writeHead(500, { 'Content-Type': 'text/html' });
+            resp.end('Server error');
+         }
+
+      });
+   }
+
 
    else if (req.url === '/forgotpassword' && req.method === 'GET ') {
       fs.readFile('forgotpassword.html', (err, forgotpassword) => {
@@ -158,7 +224,7 @@ http.createServer((req, resp) => {
          try {
             const email = await Checkmail(forgotreadabledata.email);
             if (email) {
-               createOTP(forgotreadabledata.email);
+               createforgotOTP(forgotreadabledata.email);
                fs.readFile('forgotcode.html', (err, forgotcode) => {
                   if (err) {
                      resp.writeHead(404, { 'Content-Type': 'text/html' });
@@ -198,7 +264,7 @@ http.createServer((req, resp) => {
          let otpreadabledata = querystring.parse(otprawdata);
 
          try {
-            const otpRecord = await verifyOTP(forgottenEmail, otpreadabledata.otp);
+            const otpRecord = await verifyforgotOTP(forgottenEmail, otpreadabledata.otp);
             if (otpRecord) {
                fs.readFile('resetpassword.html', (err, resetpassword) => {
                   if (err) {
@@ -209,7 +275,7 @@ http.createServer((req, resp) => {
                   resp.end(resetpassword);
                });
             } else {
-               console.log(chalk.red('Entered OTP:', otpreadabledata.otp, 'for Email:', forgottenEmail , 'is invalid'));
+               console.log(chalk.red('Entered OTP:', otpreadabledata.otp, 'for Email:', forgottenEmail, 'is invalid'));
                fs.readFile('forgotcode.html', (err, forgotcode) => {
                   if (err) {
                      resp.writeHead(404, { 'Content-Type': 'text/html' });
